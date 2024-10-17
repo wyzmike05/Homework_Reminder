@@ -1,3 +1,3 @@
-# wyzmike05.github.io
+# Homework_reminder
 My works...
 Sometimes I may update some homework or so?
