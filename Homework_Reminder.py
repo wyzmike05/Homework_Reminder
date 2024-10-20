@@ -1,16 +1,20 @@
 import sys
-import sqlite3
+import json
+import os
 from PyQt5.QtWidgets import (
     QApplication,
     QWidget,
-    QLabel,
     QVBoxLayout,
     QTextEdit,
     QPushButton,
+    QLabel,
     QDateTimeEdit,
-    QMessageBox,
-    QApplication,
+    QListWidget,
+    QListWidgetItem,
     QDesktopWidget,
+    QHBoxLayout,
+    QCheckBox,
+    QMessageBox,
 )
 from PyQt5.QtCore import QDateTime
 
@@ -20,9 +24,9 @@ class W_Reminder(QWidget):
         super().__init__()
 
         # set window title window size and window position
-        self.setWindowTitle("Homework Reminder")
+        self.setWindowTitle("item Reminder")
         self.resize(400, 600)
-        self.initialize_window_position()
+        self.set_window_position()
 
         # create layout
         layout = QVBoxLayout()
@@ -65,9 +69,9 @@ class W_Reminder(QWidget):
         self.item_to_do_label = QLabel("item To Do:")
         layout.addWidget(self.item_to_do_label)
 
-        self.item_to_do_display = QTextEdit()
-        self.item_to_do_display.setReadOnly(True)
-        layout.addWidget(self.item_to_do_display)
+        self.item_to_do = QListWidget()
+        layout.addWidget(self.item_to_do)
+        # TODO
 
         # connect save button with add_item
         self.save_button.clicked.connect(self.add_item)
@@ -78,32 +82,112 @@ class W_Reminder(QWidget):
         # load item
         self.load_item()
 
-    def initialize_window_position(self):
+    def set_window_position(self):
+        """
+        set window position
+        """
         qr = self.frameGeometry()
         central_point = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(central_point)
         self.move(qr.topLeft())
 
     def add_item(self):
-        pass  # TODO
+        """
+        write the file with input
+        """
+        subject = self.subject_input.toPlainText().strip()
+        assignment_date = self.assignment_date_input.dateTime()
+        content = self.assignment_content_input.toPlainText().strip()
+        due_time = self.due_time_input.dateTime()
+
+        if not subject or not content:
+            QMessageBox.warning(self, "Error", "Subject and content cannot be empty!")
+            return
+
+        if due_time < assignment_date:
+            QMessageBox.warning(
+                self, "Error", "Assignment time must be earlier than due time!"
+            )
+            return
+        assignment_date = assignment_date.toString("yyyy-MM-dd HH:mm")
+        due_time = due_time.toString("yyyy-MM-dd HH:mm")
+
+        item_data = {
+            "subject": subject,
+            "assignment_date": assignment_date,
+            "content": content,
+            "due_time": due_time,
+        }
+
+        if os.path.exists("item_data.json"):
+            with open("item_data.json", "r") as file:
+                try:
+                    data = json.load(file)
+                except json.JSONDecodeError:
+                    data = []
+        else:
+            data = []
+
+        data.append(item_data)
+
+        data = sorted(data, key=lambda x: x["due_time"])
+
+        with open("item_data.json", "w") as file:
+            json.dump(data, file, indent=4)
+
+        self.subject_input.clear()
+        self.assignment_content_input.clear()
+
+        self.load_item()
+
+        # TODO
 
     def load_item(self):
-        pass  # TODO
+        # 清空当前显示的列表
+        self.item_to_do.clear()
+
+        # 检查文件是否存在
+        if os.path.exists("item_data.json"):
+            with open("item_data.json", "r") as file:
+                try:
+                    data = json.load(file)
+                except json.JSONDecodeError:
+                    data = []
+
+            # 遍历数据并将每条任务显示在列表中
+            for item_data in data:
+                subject = item_data["subject"]
+                assignment_date = item_data["assignment_date"]
+                due_time = item_data["due_time"]
+                content = item_data["content"]
+
+                # 将任务内容组合成一个可视化的字符串
+                item_text = f"Subject: {subject}\nContent: {content}\nAssigned:{assignment_date}\nDue: {due_time}"
+
+                # 创建QListWidgetItem并添加到QListWidget
+                list_item = QListWidgetItem(item_text)
+                self.item_to_do.addItem(list_item)
+        # TODO
 
     def finish_item(self):
-        pass  # TODO
+        pass
+        # TODO
 
     def delete_item(self):
-        pass  # TODO
+        pass
+        # TODO
 
     def remind_item(self):
-        pass  # TODO
+        pass
+        # TODO
 
     def edit_item(self):
-        pass  # TODO
+        pass
+        # TODO
 
     def alert(self):
-        pass  # TODO
+        pass
+        # TODO
 
 
 if __name__ == "__main__":
