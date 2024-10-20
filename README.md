@@ -1,3 +1,3 @@
-# Homework_reminder
+# Homework_Reminder
 My works...
 Sometimes I may update some homework or so?
