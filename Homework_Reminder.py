@@ -15,8 +15,11 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QCheckBox,
     QMessageBox,
+    QDialog,
+    QLineEdit,
+    QDateEdit,
 )
-from PyQt5.QtCore import QDateTime
+from PyQt5.QtCore import QDateTime, QDate
 
 
 class W_Reminder(QWidget):
@@ -278,17 +281,113 @@ class W_Reminder(QWidget):
         # TODO
         self.load_task()
 
-    def remind_task(self):
-        pass
+    def edit_task(self, task_data):
+        # 创建并显示编辑任务的弹窗
+        dialog = EditTaskDialog(task_data, self)
+
+        # 如果用户点击保存
+        if dialog.exec_() == QDialog.Accepted:
+            updated_task = dialog.get_updated_task_data()
+
+            print(f"Updated Task: {updated_task}")
+            if os.path.exists("task_data.json"):
+                with open("task_data.json", "r") as file:
+                    try:
+                        data = json.load(file)
+                    except json.JSONDecodeError:
+                        data = []
+                try:
+                    data.remove(task_data)
+                except ValueError:
+                    return
+                data.append(updated_task)
+                data = sorted(data, key=lambda x: x["due_time"])
+
+                with open("task_data.json", "w") as file:
+                    json.dump(data, file, indent=4)
+            self.load_task()
+        else:
+            print("用户取消了编辑")
         # TODO
 
-    def edit_task(self):
+    def remind_task(self):
         pass
         # TODO
 
     def alert(self):
         pass
         # TODO
+
+
+class EditTaskDialog(QDialog):
+    def __init__(self, task_data, parent=None):
+        super(EditTaskDialog, self).__init__(parent)
+        self.setWindowTitle("Edit Task")
+
+        # 保存传入的任务数据
+        self.task_data = task_data
+
+        # 创建布局
+        layout = QVBoxLayout()
+
+        # 科目输入框
+        self.subject_edit = QLineEdit(self)
+        self.subject_edit.setText(task_data.get("subject", ""))
+        layout.addWidget(QLabel("Subject:"))
+        layout.addWidget(self.subject_edit)
+
+        # 内容输入框
+        self.content_edit = QLineEdit(self)
+        self.content_edit.setText(task_data.get("content", ""))
+        layout.addWidget(QLabel("Content:"))
+        layout.addWidget(self.content_edit)
+
+        # 分配日期
+        self.assignment_date_edit = QDateTimeEdit(self)
+        self.assignment_date_edit.setDateTime(
+            QDateTime.fromString(
+                task_data.get("assignment_date", ""), "yyyy-MM-dd HH:mm"
+            )
+        )
+        layout.addWidget(QLabel("Assignment Date:"))
+        layout.addWidget(self.assignment_date_edit)
+
+        # 截止日期
+        self.due_date_edit = QDateTimeEdit(self)
+        self.due_date_edit.setDateTime(
+            QDateTime.fromString(task_data.get("due_time", ""), "yyyy-MM-dd HH:mm")
+        )
+        layout.addWidget(QLabel("Due Date:"))
+        layout.addWidget(self.due_date_edit)
+
+        # 按钮布局
+        button_layout = QHBoxLayout()
+
+        # 保存按钮
+        save_button = QPushButton("Save")
+        save_button.clicked.connect(self.accept)
+        button_layout.addWidget(save_button)
+
+        # 取消按钮
+        cancel_button = QPushButton("Cancel")
+        cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_button)
+
+        # 添加按钮布局到主布局
+        layout.addLayout(button_layout)
+
+        # 设置弹窗布局
+        self.setLayout(layout)
+
+    def get_updated_task_data(self):
+        # 更新任务数据并返回
+        return {
+            "subject": self.subject_edit.text(),
+            "content": self.content_edit.text(),
+            "assignment_date": self.assignment_date_edit.date().toString("yyyy-MM-dd"),
+            "due_time": self.due_date_edit.date().toString("yyyy-MM-dd"),
+            "done": self.task_data.get("done", False),  # 保留原来任务是否完成的状态
+        }
 
 
 if __name__ == "__main__":
